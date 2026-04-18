@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read Image EXIF Data with GPS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .upload-area {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .table th {
+            width: 35%;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="text-center mb-4">
+                <h1 class="display-6">Advanced Metadata Reader</h1>
+                <p class="text-muted">Extract EXIF, GPS, and Copyright details</p>
+            </div>
+
+            <div class="upload-area p-5 mb-4 text-center">
+                <div class="mb-3">
+                    <input class="form-control form-control-lg" type="file" id="fileInput" accept="image/jpeg, image/png">
+                </div>
+            </div>
+
+            <div id="resultCard" class="card d-none">
+                <div class="card-header bg-success text-white">
+                    Image Analysis Result
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center mb-3">
+                            <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded border shadow-sm">
+                        </div>
+                        <div class="col-md-8">
+                            <table class="table table-bordered table-hover">
+                                <tbody>
+                                    <tr>
+                                        <th>Make & Model</th>
+                                        <td id="cameraInfo">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Date Taken</th>
+                                        <td id="dateTaken">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Exposure</th>
+                                        <td id="exposureInfo">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>ISO Speed</th>
+                                        <td id="iso">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>GPS Latitude</th>
+                                        <td id="gpsLat">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>GPS Longitude</th>
+                                        <td id="gpsLong">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Copyright / Artist</th>
+                                        <td id="copyright">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        var resultCard = document.getElementById('resultCard');
+        var preview = document.getElementById('imagePreview');
+
+        if(file && file.type.match('image.*')) {
+            var reader = new FileReader();
+
+            reader.onload = function(event) {
+                preview.src = event.target.result;
+                resultCard.classList.remove('d-none');
+            };
+
+            reader.readAsDataURL(file);
+
+            EXIF.getData(file, function() {
+                var make = EXIF.getTag(this, "Make");
+                var model = EXIF.getTag(this, "Model");
+                var date = EXIF.getTag(this, "DateTime");
+                var shutter = EXIF.getTag(this, "ExposureTime");
+                var fnumber = EXIF.getTag(this, "FNumber");
+                var iso = EXIF.getTag(this, "ISOSpeedRatings");
+                var artist = EXIF.getTag(this, "Artist");
+                var copy = EXIF.getTag(this, "Copyright");
+
+                var lat = EXIF.getTag(this, "GPSLatitude");
+                var latRef = EXIF.getTag(this, "GPSLatitudeRef");
+                var lon = EXIF.getTag(this, "GPSLongitude");
+                var lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+
+                var camString = (make || "") + " " + (model || "");
+                document.getElementById('cameraInfo').innerText = camString.trim() ? camString : "N/A";
+
+                document.getElementById('dateTaken').innerText = date ? date : "N/A";
+
+                var expString = (shutter ? "1/" + Math.round(1/shutter) + "s" : "") + (fnumber ? " @ f/" + fnumber : "");
+                document.getElementById('exposureInfo').innerText = expString ? expString : "N/A";
+
+                document.getElementById('iso').innerText = iso ? iso : "N/A";
+
+                var finalLat = lat ? lat[0] + "° " + lat[1] + "' " + lat[2] + '" ' + (latRef || "") : "N/A";
+                var finalLon = lon ? lon[0] + "° " + lon[1] + "' " + lon[2] + '" ' + (lonRef || "") : "N/A";
+
+                document.getElementById('gpsLat').innerText = finalLat;
+                document.getElementById('gpsLong').innerText = finalLon;
+
+                document.getElementById('copyright').innerText = copy ? copy : (artist ? artist : "N/A");
+            });
+        }
+    });
+</script>
+
+</body>
+</html>
